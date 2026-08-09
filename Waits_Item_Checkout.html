@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#5c4023">
+<title>Waits Hall (Staff) — Item Checkout</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🤠</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Bitter:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#f6efe1; --paper:#fdf8ec; --tan:#e6d5b8; --tan2:#d9c39a;
+  --leather:#a9743f; --saddle:#7d5327; --dark:#4a3116; --ink:#33220f;
+  --red:#a83226; --red-bg:#f7ddd8; --green:#4a6b3a; --green-bg:#e2ecd8;
+  --gold:#c9963c;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  margin:0; font-family:'Bitter',Georgia,serif; color:var(--ink);
+  background:var(--cream);
+  background-image:repeating-linear-gradient(90deg, rgba(125,83,39,.035) 0 2px, transparent 2px 90px);
+  min-height:100vh; padding-bottom:calc(76px + env(safe-area-inset-bottom));
+}
+header{
+  background:linear-gradient(180deg,#5c4023,#4a3116);
+  color:var(--cream); text-align:center; padding:14px 12px 10px;
+  border-bottom:4px solid var(--gold);
+  box-shadow:0 2px 8px rgba(51,34,15,.35);
+}
+header h1{font-family:'Rye',Georgia,serif; font-weight:400; font-size:1.35rem; margin:0; letter-spacing:.5px}
+header .sub{font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color:var(--tan2); margin-top:2px}
+.stats{display:flex; gap:8px; justify-content:center; margin-top:10px}
+.stat{
+  background:rgba(246,239,225,.12); border:1px solid rgba(246,239,225,.35);
+  border-radius:8px; padding:4px 14px; min-width:86px;
+}
+.stat b{display:block; font-size:1.25rem; line-height:1.2}
+.stat span{font-size:.65rem; text-transform:uppercase; letter-spacing:.12em; color:var(--tan2)}
+.stat.warn{background:rgba(168,50,38,.35); border-color:#d98a80}
+main{max-width:640px; margin:0 auto; padding:14px 14px 8px}
+.card{
+  background:var(--paper); border:1.5px solid var(--tan2); border-radius:12px;
+  padding:14px; margin-bottom:12px; box-shadow:0 1px 4px rgba(74,49,22,.10);
+}
+.card h2{
+  font-family:'Rye',Georgia,serif; font-weight:400; font-size:1.02rem; color:var(--saddle);
+  margin:0 0 10px; display:flex; align-items:center; gap:8px;
+}
+.card h2::after{content:""; flex:1; height:2px; background:repeating-linear-gradient(90deg,var(--tan2) 0 6px, transparent 6px 11px)}
+label{display:block; font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--saddle); margin:12px 0 4px}
+label:first-of-type{margin-top:0}
+input[type=text], input[type=number], textarea, select{
+  width:100%; font-family:inherit; font-size:1rem; color:var(--ink);
+  background:#fff; border:1.5px solid var(--tan2); border-radius:8px; padding:10px 12px;
+}
+input:focus, textarea:focus{outline:2px solid var(--leather); outline-offset:1px}
+textarea{resize:vertical; min-height:56px}
+.hint{font-size:.78rem; color:#8a7355; margin-top:4px}
+.chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:6px}
+.chip{
+  font-family:inherit; font-size:.86rem; padding:7px 13px; border-radius:999px;
+  border:1.5px solid var(--tan2); background:#fff; color:var(--ink); cursor:pointer;
+}
+.chip.on{background:var(--saddle); border-color:var(--saddle); color:var(--cream); font-weight:600}
+.chip.add{border-style:dashed; color:var(--saddle)}
+.suggest{position:relative}
+.suggest-list{
+  position:absolute; z-index:30; left:0; right:0; top:calc(100% + 3px);
+  background:#fff; border:1.5px solid var(--tan2); border-radius:10px;
+  max-height:250px; overflow:auto; box-shadow:0 6px 18px rgba(51,34,15,.18);
+}
+.suggest-list button{
+  display:block; width:100%; text-align:left; background:none; border:0;
+  border-bottom:1px solid var(--tan); padding:9px 12px; font-family:inherit; font-size:.95rem; cursor:pointer;
+}
+.suggest-list button:last-child{border-bottom:0}
+.suggest-list button:active{background:var(--tan)}
+.suggest-list .sm{display:block; font-size:.76rem; color:#8a7355}
+.pickwrap{border:1.5px solid var(--tan2); border-radius:10px; background:#fff; overflow:hidden}
+.pickwrap input{border:0; border-bottom:1.5px solid var(--tan); border-radius:0}
+.itemlist{max-height:260px; overflow:auto}
+.itemlist button{
+  display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%;
+  background:none; border:0; border-bottom:1px solid var(--tan);
+  padding:9px 12px; font-family:inherit; font-size:.93rem; cursor:pointer; text-align:left;
+}
+.itemlist button:last-child{border-bottom:0}
+.itemlist button.on{background:var(--tan); font-weight:700}
+.itemlist .loc{font-size:.74rem; color:#8a7355; white-space:nowrap}
+.selected-banner{
+  margin-top:8px; background:var(--tan); border:1.5px solid var(--tan2); border-radius:8px;
+  padding:8px 12px; font-size:.9rem; display:flex; justify-content:space-between; align-items:center; gap:8px;
+}
+.selected-banner b{color:var(--dark)}
+.selected-banner button{border:0;background:none;color:var(--red);font-family:inherit;font-weight:700;cursor:pointer}
+.btn{
+  display:block; width:100%; font-family:'Rye',Georgia,serif; font-size:1.05rem; letter-spacing:.04em;
+  background:linear-gradient(180deg,var(--leather),var(--saddle)); color:var(--cream);
+  border:0; border-radius:10px; padding:13px; margin-top:16px; cursor:pointer;
+  box-shadow:0 3px 0 var(--dark);
+}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 var(--dark)}
+.btn.secondary{background:var(--paper); color:var(--saddle); border:1.5px solid var(--saddle); box-shadow:0 3px 0 var(--tan2); font-size:.95rem; padding:11px}
+.btn.small{width:auto; padding:8px 16px; font-size:.85rem; margin-top:0; display:inline-block}
+.rec{
+  background:var(--paper); border:1.5px solid var(--tan2); border-left:6px solid var(--tan2);
+  border-radius:10px; padding:11px 13px; margin-bottom:10px; box-shadow:0 1px 3px rgba(74,49,22,.08);
+}
+.rec.out{border-left-color:var(--gold)}
+.rec.concern{border-left-color:var(--red); background:var(--red-bg)}
+.rec.returned{border-left-color:var(--green); background:var(--green-bg)}
+.rec .top{display:flex; justify-content:space-between; gap:8px; align-items:baseline}
+.rec .who{font-weight:700; font-size:1rem}
+.rec .item{font-size:.95rem; margin-top:2px}
+.rec .meta{font-size:.78rem; color:#7a6446; margin-top:4px; line-height:1.5}
+.rec.concern .meta{color:#7c4a42}
+.badge{font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; padding:3px 9px; border-radius:999px; white-space:nowrap}
+.badge.out{background:#f3e3bc; color:#7a5a13; border:1px solid var(--gold)}
+.badge.concern{background:var(--red); color:#fff}
+.badge.returned{background:var(--green); color:#fff}
+.rowbtns{display:flex; gap:8px; margin-top:9px}
+.rowbtns button{
+  flex:1; font-family:inherit; font-weight:700; font-size:.85rem; padding:8px; border-radius:8px; cursor:pointer;
+  border:1.5px solid var(--saddle); background:#fff; color:var(--saddle);
+}
+.rowbtns button.primary{background:var(--saddle); color:var(--cream)}
+.rowbtns button.danger{border-color:var(--red); color:var(--red)}
+.returnpick{margin-top:9px; padding-top:9px; border-top:1.5px dashed var(--tan2)}
+.returnpick .lbl{font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--saddle); margin-bottom:5px}
+.filterbar{display:flex; gap:7px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px}
+.empty{
+  text-align:center; color:#8a7355; padding:34px 16px; font-style:italic;
+  background:var(--paper); border:1.5px dashed var(--tan2); border-radius:12px;
+}
+.empty .big{font-size:2rem; font-style:normal}
+nav{
+  position:fixed; bottom:0; left:0; right:0; z-index:50;
+  background:linear-gradient(180deg,#5c4023,#4a3116);
+  border-top:3px solid var(--gold);
+  display:flex; padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  flex:1; background:none; border:0; color:var(--tan2); font-family:inherit;
+  font-size:.68rem; padding:8px 2px 7px; cursor:pointer; letter-spacing:.04em;
+}
+nav button .ic{display:block; font-size:1.25rem; margin-bottom:1px}
+nav button.on{color:#fff}
+nav button.on .ic{transform:translateY(-1px)}
+.tab{display:none}
+.tab.on{display:block}
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:calc(88px + env(safe-area-inset-bottom));
+  background:var(--dark); color:var(--cream); padding:10px 18px; border-radius:999px;
+  font-size:.9rem; z-index:60; opacity:0; transition:opacity .25s; pointer-events:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.3); max-width:88vw; text-align:center;
+}
+.toast.show{opacity:1}
+.notice{
+  background:#fff6dd; border:1.5px solid var(--gold); border-radius:10px;
+  padding:9px 12px; font-size:.82rem; margin-bottom:12px; color:#6b4e12;
+}
+.settingsrow{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--tan)}
+.settingsrow:last-child{border-bottom:0}
+.settingsrow input[type=number]{width:82px; text-align:center}
+.invloc{margin-bottom:10px}
+.invloc summary{font-weight:700; color:var(--saddle); cursor:pointer; padding:7px 0; font-size:.95rem}
+.invloc ul{margin:4px 0 8px; padding-left:20px; font-size:.9rem; line-height:1.7}
+footer{max-width:640px;margin:4px auto 0;text-align:center;font-size:.72rem;color:#a08a68;padding:0 14px}
+.searchbar{margin-bottom:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>★ Waits Hall (Staff) ★</h1>
+  <div class="sub">Item Checkout Corral · 2026–27</div>
+  <div class="stats">
+    <div class="stat"><b id="statOut">0</b><span>Out Now</span></div>
+    <div class="stat" id="statOverdueBox"><b id="statOverdue">0</b><span>Concern</span></div>
+    <div class="stat"><b id="statToday">0</b><span>Today</span></div>
+  </div>
+</header>
+
+<main>
+<div id="storageNotice" class="notice" style="display:none">⚠️ This browser is blocking saved data — entries will be lost when the page closes. Open this file in Safari/Chrome on the desk phone to keep history.</div>
+
+<!-- CHECK OUT TAB -->
+<section class="tab on" id="tab-checkout">
+  <div class="card">
+    <h2>🤠 Check Out an Item</h2>
+
+    <label>Resident</label>
+    <div class="suggest">
+      <input type="text" id="resInput" placeholder="Start typing a name…" autocomplete="off">
+      <div class="suggest-list" id="resSuggest" style="display:none"></div>
+    </div>
+    <div id="resBanner"></div>
+
+    <label>Contact <span style="font-weight:400;text-transform:none;letter-spacing:0">(auto-fills from roster)</span></label>
+    <input type="text" id="contactInput" placeholder="Phone number to reach them" inputmode="tel" autocomplete="off">
+
+    <label>Item</label>
+    <div class="pickwrap">
+      <input type="text" id="itemSearch" placeholder="Search the inventory…" autocomplete="off">
+      <div class="chips" style="padding:8px 10px 2px" id="catChips"></div>
+      <div class="itemlist" id="itemList"></div>
+    </div>
+    <div id="itemBanner"></div>
+    <div class="hint">Can't find it? Type a name above and choose “custom item”.</div>
+
+    <label>Checked out by (RA/CA)</label>
+    <div class="chips" id="staffChips"></div>
+
+    <label>Collateral held <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+    <input type="text" id="collateralInput" placeholder="Student ID, room key, phone…" autocomplete="off">
+
+    <label>Notes <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+    <textarea id="notesInput" placeholder="Condition, pieces missing, expected return…"></textarea>
+
+    <button class="btn" id="checkoutBtn">🐎 &nbsp;Check Out</button>
+  </div>
+</section>
+
+<!-- OUT NOW TAB -->
+<section class="tab" id="tab-out">
+  <div id="outList"></div>
+</section>
+
+<!-- LOG TAB -->
+<section class="tab" id="tab-log">
+  <div class="filterbar" id="logFilters"></div>
+  <div class="searchbar"><input type="text" id="logSearch" placeholder="Search log…"></div>
+  <div id="logList"></div>
+  <button class="btn" id="exportBtn">📜 &nbsp;Export Desk Log Sheet (.xlsx)</button>
+  <div class="hint" style="text-align:center;margin-top:6px">Green = returned · Red = missing/concern (2+ hrs) · White = still out.<br>Drop the sheet into the Waits 26-27 Desk Log.</div>
+</section>
+
+<!-- MORE TAB -->
+<section class="tab" id="tab-more">
+  <div class="card">
+    <h2>⚙️ Staff &amp; Status</h2>
+    <div class="settingsrow" style="border-bottom:0">
+      <div>RA/CA roster</div>
+    </div>
+    <div class="chips" id="staffManage" style="margin:4px 0 10px"></div>
+    <div class="hint">Missing a staff member? Contact LRA Aaron if you encounter issues.</div>
+  </div>
+  <div class="card">
+    <h2>🔄 Inventory Sync</h2>
+    <button class="btn secondary" style="margin-top:0" id="invSyncBtn">Update Inventory from Desk Log (.xlsx)</button>
+    <input type="file" id="invSyncFile" accept=".xlsx,.xlsm" style="display:none">
+    <div class="hint" style="margin-top:8px">Keep editing the <b>Inventory</b> sheet in the Waits 26-27 Desk Log like normal. Then tap this and pick the workbook — the app reads that sheet, updates its item list, and logs every change below. No double entry.</div>
+    <div class="settingsrow" style="margin-top:10px"><div>Change Log<br><span class="hint" id="invLogCount"></span></div></div>
+    <div id="invLog"></div>
+  </div>
+  <div class="card">
+    <h2>🗄️ Front Desk Inventory</h2>
+    <div id="invRef"></div>
+  </div>
+  <div class="card">
+    <h2>💾 Data</h2>
+    <button class="btn secondary" id="backupBtn">Download Backup (JSON)</button>
+    <button class="btn secondary" id="restoreBtn">Restore From Backup</button>
+    <input type="file" id="restoreFile" accept=".json" style="display:none">
+    <button class="btn secondary" id="clearBtn" style="border-color:var(--red);color:var(--red);box-shadow:0 3px 0 #e0b7b1">Clear All Records…</button>
+    <div class="hint" style="margin-top:8px">Data saves in this phone's browser. Use backups to move history between devices.</div>
+  </div>
+</section>
+</main>
+
+<footer>Designed for Waits Hall · est. 1948 🌵</footer>
+
+<nav>
+  <button data-tab="checkout" class="on"><span class="ic">🤠</span>Check Out</button>
+  <button data-tab="out"><span class="ic">🐎</span>Out Now</button>
+  <button data-tab="log"><span class="ic">📜</span>Log</button>
+  <button data-tab="more"><span class="ic">⚙️</span>More</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ==========================================================
+   ✏️  STAFF LIST — EDIT THIS LINE TO ADD/REMOVE RAs & CAs  ✏️
+   Just add names in quotes, separated by commas, then save.
+   ========================================================== */
+const STAFF = ["Aaron", "Alana", "DaZiah", "Bella", "Bryson", "Jack", "Malaina", "Casey"];
+
+/* ============ DATA (from Waits 26-27 Desk Log) ============ */
+const DATA = {"residents":[{"name":"Leicht, Elizabeth","pref":"","room":"Waits 101-1","phone":"858/735-9135","ra":"Aaron"},{"name":"O'Connor, Charlotte","pref":"","room":"Waits 101-2","phone":"310/293-6199","ra":"Aaron"},{"name":"Kiah, Aaron","pref":"","room":"Waits 102-RA","phone":"513/620-1913","ra":"Aaron"},{"name":"Holmann, Javiera","pref":"","room":"Waits 103-1","phone":"50578724963","ra":"Aaron"},{"name":"Reyes, Sara","pref":"","room":"Waits 103-2","phone":"5930980000000","ra":"Aaron"},{"name":"Torres, Valentina","pref":"","room":"Waits 103-3","phone":"50246065259","ra":"Aaron"},{"name":"Gruett, Camilla","pref":"","room":"Waits 104-1","phone":"715/889-9149","ra":"Aaron"},{"name":"Bauer, Addison","pref":"","room":"Waits 104-2","phone":"847/721-3753","ra":"Aaron"},{"name":"Fuller, Mason","pref":"","room":"Waits 105-1","phone":"518/350-3406","ra":"Aaron"},{"name":"O'Keeffe, Colin","pref":"","room":"Waits 105-2","phone":"661/803-4321","ra":"Aaron"},{"name":"Friedmann, Sebastian","pref":"","room":"Waits 105-3","phone":"917/244-4149","ra":"Aaron"},{"name":"Wares, Harley","pref":"","room":"Waits 106-1","phone":"602/942-3501","ra":"Aaron"},{"name":"Parish, Graham","pref":"","room":"Waits 106-2","phone":"817/718-4464","ra":"Aaron"},{"name":"Mattivi, Gianna","pref":"","room":"Waits 107-1","phone":"818/431-1197","ra":"Aaron"},{"name":"Boice, Kalianne","pref":"","room":"Waits 107-2","phone":"818/912-8699","ra":"Aaron"},{"name":"Schroeder, Lily","pref":"","room":"Waits 108-1","phone":"858/344-2444","ra":"Aaron"},{"name":"Young, Reagan","pref":"","room":"Waits 108-2","phone":"661/699-9137","ra":"Aaron"},{"name":"Hay, Ainsley","pref":"","room":"Waits 109-1","phone":"661/917-8050","ra":"Aaron"},{"name":"Ulibarri, Sierra","pref":"","room":"Waits 109-2","phone":"562/682-8609","ra":"Aaron"},{"name":"Clarke, Emma","pref":"","room":"Waits 110-1","phone":"424/247-3433","ra":"Aaron"},{"name":"Selser, Joslyn","pref":"","room":"Waits 110-2","phone":"913/343-1110","ra":"Aaron"},{"name":"Augusta, Haley","pref":"","room":"Waits 111-1","phone":"603/957-9055","ra":"Aaron"},{"name":"Lee, Lorelei","pref":"","room":"Waits 111-2","phone":"865/310-3754","ra":"Aaron"},{"name":"Banks, Margaret","pref":"","room":"Waits 112-1","phone":"615/479-6205","ra":"Aaron"},{"name":"Finucane, Mary Kathryn","pref":"","room":"Waits 112-2","phone":"629/333-5620","ra":"Aaron"},{"name":"Graves, Gianna","pref":"","room":"Waits 112-3","phone":"682/970-5875","ra":"Aaron"},{"name":"Brosius, Emma","pref":"","room":"Waits 113-1","phone":"224/651-5657","ra":"Aaron"},{"name":"Johnson, Delaney","pref":"","room":"Waits 113-2","phone":"708/789-7354","ra":"Aaron"},{"name":"Sudduth, Weston","pref":"","room":"Waits 114-1","phone":"217/370-4390","ra":"Alana"},{"name":"Coles, Aidan","pref":"","room":"Waits 114-2","phone":"817/600-1362","ra":"Alana"},{"name":"Moore, Mya","pref":"","room":"Waits 115-1","phone":"832/523-4277","ra":"Alana"},{"name":"Colon, Leah","pref":"","room":"Waits 115-2","phone":"","ra":"Alana"},{"name":"Allen, Lauren","pref":"","room":"Waits 116-1","phone":"714/713-8112","ra":"Alana"},{"name":"Neubauer, Ashley","pref":"","room":"Waits 116-2","phone":"253/312-8584","ra":"Alana"},{"name":"Henderson, Taylor","pref":"","room":"Waits 117-1","phone":"972/743-7780","ra":"Alana"},{"name":"Hamilton, Madison","pref":"","room":"Waits 117-2","phone":"817/333-9211","ra":"Alana"},{"name":"Baldwin, Rachel","pref":"","room":"Waits 118-1","phone":"682/328-2760","ra":"Alana"},{"name":"Leal, Lilly","pref":"","room":"Waits 118-2","phone":"832/420-7003","ra":"Alana"},{"name":"Sida, Ryder","pref":"","room":"Waits 119-1","phone":"415/710-1759","ra":"Alana"},{"name":"Kanary, Sean","pref":"","room":"Waits 119-2","phone":"248/302-5005","ra":"Alana"},{"name":"Bolte, Cole","pref":"","room":"Waits 120-1","phone":"602/832-6087","ra":"Alana"},{"name":"Horwitz, Brady","pref":"","room":"Waits 120-2","phone":"480/593-5553","ra":"Alana"},{"name":"Rainone, Sophia","pref":"","room":"Waits 121-1","phone":"714/581-7137","ra":"Alana"},{"name":"Giles, Mary","pref":"","room":"Waits 121-2","phone":"336/524-1538","ra":"Alana"},{"name":"Coleman, Jazzmin","pref":"","room":"Waits 122-1","phone":"","ra":"Alana"},{"name":"Peters, Symora","pref":"","room":"Waits 122-2","phone":"214/946-0008","ra":"Alana"},{"name":"Miller, Madison","pref":"","room":"Waits 123-1","phone":"909/767-5382","ra":"Alana"},{"name":"Tomkins, Emma","pref":"","room":"Waits 123-2","phone":"949/290-4550","ra":"Alana"},{"name":"Radefeld, Holden","pref":"","room":"Waits 124-1","phone":"314/650-7239","ra":"Alana"},{"name":"Benedict, Ryan","pref":"","room":"Waits 124-2","phone":"","ra":"Alana"},{"name":"Hagan, Brendan","pref":"","room":"Waits 124-3","phone":"314/378-2024","ra":"Alana"},{"name":"Solis, Alana","pref":"","room":"Waits 125-RA","phone":"","ra":"Alana"},{"name":"Barra, Tanner","pref":"","room":"Waits 126-1","phone":"424/405-1158","ra":"Alana"},{"name":"Nicholson, Thomas","pref":"","room":"Waits 126-2","phone":"949/813-7109","ra":"Alana"},{"name":"Demushkin, Brayden","pref":"","room":"Waits 126-3","phone":"707/483-3135","ra":"Alana"},{"name":"O'Brien, Finley","pref":"","room":"Waits 127-1","phone":"805/364-1379","ra":"Alana"},{"name":"Nelles, Addison","pref":"","room":"Waits 127-2","phone":"858/260-4554","ra":"Alana"},{"name":"Boone, Cristina","pref":"","room":"Waits 201-1","phone":"832/405-2846","ra":"DaZiah"},{"name":"Gomez, Clarissa","pref":"","room":"Waits 201-2","phone":"832/977-1635","ra":"DaZiah"},{"name":"Jackson, Jaden","pref":"","room":"Waits 201-3","phone":"","ra":"DaZiah"},{"name":"McCroskey, Bradley","pref":"","room":"Waits 202-1","phone":"817/713-7738","ra":"DaZiah"},{"name":"McGhee, Keaton","pref":"","room":"Waits 202-2","phone":"303/945-6526","ra":"DaZiah"},{"name":"Van Valen, Troy","pref":"","room":"Waits 203-1","phone":"832/404-9690","ra":"DaZiah"},{"name":"Castilleja, Enrique","pref":"","room":"Waits 203-2","phone":"214/769-1522","ra":"DaZiah"},{"name":"Alvarez, Hannah","pref":"","room":"Waits 204-1","phone":"210/627-3900","ra":"DaZiah"},{"name":"Haddad, Kylie","pref":"","room":"Waits 204-2","phone":"832/998-5715","ra":"DaZiah"},{"name":"Kathuria, Amairah","pref":"","room":"Waits 204-3","phone":"702/488-7004","ra":"DaZiah"},{"name":"Knox, DaZiah","pref":"","room":"Waits 205-RA","phone":"682/266-4201","ra":"DaZiah"},{"name":"Kovach, Lola","pref":"","room":"Waits 206-1","phone":"970/888-1271","ra":"DaZiah"},{"name":"Oehring, Ava","pref":"","room":"Waits 206-2","phone":"737/226-1673","ra":"DaZiah"},{"name":"Prince, Mavis","pref":"","room":"Waits 207-1","phone":"469/439-8311","ra":"DaZiah"},{"name":"Roemer, Tessa","pref":"","room":"Waits 207-2","phone":"312/961-1503","ra":"DaZiah"},{"name":"Sanchez, Bebe","pref":"","room":"Waits 208-1","phone":"915/497-4200","ra":"DaZiah"},{"name":"Gomez, Charlee","pref":"","room":"Waits 208-2","phone":"915/407-3391","ra":"DaZiah"},{"name":"Ryan, Peyton","pref":"","room":"Waits 209-1","phone":"683/453-4020","ra":"DaZiah"},{"name":"Weathington, Makaden","pref":"","room":"Waits 209-2","phone":"210/621-7252","ra":"DaZiah"},{"name":"Wesley, Karsen","pref":"","room":"Waits 209-3","phone":"657/350-1896","ra":"DaZiah"},{"name":"Pompa, Grayson","pref":"","room":"Waits 210-1","phone":"817/703-5990","ra":"DaZiah"},{"name":"Jacquemard, Luc","pref":"","room":"Waits 210-2","phone":"817/360-8230","ra":"DaZiah"},{"name":"Kaercher, Eva","pref":"","room":"Waits 211-1","phone":"725/232-6359","ra":"DaZiah"},{"name":"Griffin, Summer","pref":"","room":"Waits 211-2","phone":"831/269-9463","ra":"DaZiah"},{"name":"Foley, Ella","pref":"","room":"Waits 212-1","phone":"559/381-5870","ra":"DaZiah"},{"name":"Ford, Gracie","pref":"","room":"Waits 212-2","phone":"","ra":"DaZiah"},{"name":"Cashill, Brody","pref":"","room":"Waits 213-1","phone":"612/289-7612","ra":"DaZiah"},{"name":"LaDue, Lukas","pref":"","room":"Waits 213-2","phone":"507/676-3510","ra":"DaZiah"},{"name":"Herring, Rahston","pref":"","room":"Waits 213-3","phone":"817/881-3433","ra":"DaZiah"},{"name":"Bissonnette, William","pref":"","room":"Waits 214-1","phone":"443/610-7589","ra":"DaZiah"},{"name":"Strottman, Noah","pref":"","room":"Waits 214-2","phone":"703/956-0432","ra":"DaZiah"},{"name":"Stratton, Quinn","pref":"","room":"Waits 215-1","phone":"312/622-5474","ra":"DaZiah"},{"name":"McQuade, Landon","pref":"","room":"Waits 215-2","phone":"630/501-9715","ra":"DaZiah"},{"name":"Schmitz, Logan","pref":"","room":"Waits 215-3","phone":"682/521-0497","ra":"DaZiah"},{"name":"Brauer, Maximus","pref":"","room":"Waits 216-1","phone":"587/999-1735","ra":"DaZiah"},{"name":"Marren, Carter","pref":"","room":"Waits 216-2","phone":"775/350-8009","ra":"DaZiah"},{"name":"Bevilacqua, Sofia","pref":"","room":"Waits 217-1","phone":"925/968-8391","ra":"DaZiah"},{"name":"Cacho, Alexa","pref":"","room":"Waits 217-2","phone":"619/751-6981","ra":"DaZiah"},{"name":"Devine, Lila","pref":"","room":"Waits 218A-1","phone":"817/471-4095","ra":"DaZiah"},{"name":"Hendricks, Leah","pref":"","room":"Waits 218A-2","phone":"916/260-9933","ra":"Bella"},{"name":"Valentine, Dorothy","pref":"","room":"Waits 218B-1","phone":"252/292-0113","ra":"Bella"},{"name":"Knape, Summer","pref":"","room":"Waits 218B-2","phone":"","ra":"Bella"},{"name":"Massi, Sydney","pref":"","room":"Waits 218B-3","phone":"760/644-5120","ra":"Bella"},{"name":"Miller, Lila","pref":"","room":"Waits 218C-1","phone":"228/274-4948","ra":"Bella"},{"name":"Bennett, Makenzie","pref":"","room":"Waits 218C-2","phone":"832/392-9142","ra":"Bella"},{"name":"Fjelstad, Laney","pref":"","room":"Waits 218C-3","phone":"641/590-4322","ra":"Bella"},{"name":"Lawson, Adaline","pref":"","room":"Waits 218D-1","phone":"303/378-4541","ra":"Bella"},{"name":"Porchay, Bijou","pref":"","room":"Waits 218D-2","phone":"501/502-7735","ra":"Bella"},{"name":"Evans, Bella","pref":"","room":"Waits 218E-RA","phone":"469/212-6864","ra":"Bella"},{"name":"Burke, Emma","pref":"","room":"Waits 219-1","phone":"408/800-8286","ra":"Bryson"},{"name":"Ramsey, Elliana","pref":"","room":"Waits 219-2","phone":"815/289-8132","ra":"Bryson"},{"name":"Castillo, Emilly","pref":"","room":"Waits 220-1","phone":"682/702-4904","ra":"Bryson"},{"name":"Johnson, Allegra","pref":"","room":"Waits 220-2","phone":"512/968-5023","ra":"Bryson"},{"name":"Dillon, Parker","pref":"","room":"Waits 221-1","phone":"425/428-8078","ra":"Bryson"},{"name":"Lee, Conrad","pref":"","room":"Waits 221-2","phone":"206/771-1520","ra":"Bryson"},{"name":"Arthur, Nicholas","pref":"","room":"Waits 222-1","phone":"817/805-8566","ra":"Bryson"},{"name":"Bordovsky, Adam","pref":"","room":"Waits 222-2","phone":"817/201-2628","ra":"Bryson"},{"name":"Pogor, Davis","pref":"","room":"Waits 223-1","phone":"512/775-4419","ra":"Bryson"},{"name":"Urban, Maxwell","pref":"","room":"Waits 223-2","phone":"317/526-7745","ra":"Bryson"},{"name":"Eves, Olivia","pref":"","room":"Waits 224-1","phone":"254/981-4918","ra":"Bryson"},{"name":"Kiener, Camdyn","pref":"","room":"Waits 224-2","phone":"903/752-0343","ra":"Bryson"},{"name":"Weiss, Zoe","pref":"","room":"Waits 225-1","phone":"708/218-3011","ra":"Bryson"},{"name":"Steffen, Julia","pref":"","room":"Waits 225-2","phone":"224/585-4255","ra":"Bryson"},{"name":"Xuan, Eva","pref":"","room":"Waits 226-1","phone":"","ra":"Bryson"},{"name":"Fraire, Brianna","pref":"","room":"Waits 226-2","phone":"469/309-0203","ra":"Bryson"},{"name":"Garcia DIaz, Cecilia","pref":"","room":"Waits 227-1","phone":"682/414-6590","ra":"Bryson"},{"name":"Flores Kheyrandish, Sarah","pref":"","room":"Waits 227-2","phone":"50371868028","ra":"Bryson"},{"name":"Rangel-Medina, Isabella","pref":"","room":"Waits 228-1","phone":"737/414-0037","ra":"Bryson"},{"name":"Taylor, Drew","pref":"","room":"Waits 228-2","phone":"512/803-1298","ra":"Bryson"},{"name":"Trevino, Melanie","pref":"","room":"Waits 229-1","phone":"","ra":"Bryson"},{"name":"Harman, Kirsten","pref":"","room":"Waits 229-2","phone":"512/786-7421","ra":"Bryson"},{"name":"Hyde, Bryanna","pref":"","room":"Waits 230-1","phone":"903/394-4697","ra":"Bryson"},{"name":"De Leon, Leah","pref":"","room":"Waits 230-2","phone":"682/559-4663","ra":"Bryson"},{"name":"Borne, Bryson","pref":"","room":"Waits 231-RA","phone":"504/487-0615","ra":"Bryson"},{"name":"Frey, Hudson","pref":"","room":"Waits 232-1","phone":"913/260-7098","ra":"Bryson"},{"name":"Malfer, Hudson","pref":"","room":"Waits 232-2","phone":"816/708-7661","ra":"Bryson"},{"name":"Gunther, William","pref":"","room":"Waits 232-3","phone":"913/593-0370","ra":"Bryson"},{"name":"Reyes, Zoey","pref":"","room":"Waits 233-1","phone":"409/313-7820","ra":"Bryson"},{"name":"Villegas, Denisse","pref":"","room":"Waits 233-2","phone":"682/256-9381","ra":"Bryson"},{"name":"Barnes, Hallie","pref":"","room":"Waits 234-1","phone":"469/929-4276","ra":"Bryson"},{"name":"Wrape, Mary","pref":"","room":"Waits 234-2","phone":"501/831-7885","ra":"Bryson"},{"name":"Wanger, Haley","pref":"","room":"Waits 235-1","phone":"720/602-3310","ra":"Bryson"},{"name":"Herod, Kate","pref":"","room":"Waits 235-2","phone":"903/920-2791","ra":"Bryson"},{"name":"Biggerstaff, Lily","pref":"","room":"Waits 235-3","phone":"432/813-2147","ra":"Bryson"},{"name":"Roca Gomez, Juan","pref":"","room":"Waits 301-1","phone":"593997000000","ra":"Jack"},{"name":"Bunge, Luther","pref":"","room":"Waits 301-2","phone":"","ra":"Jack"},{"name":"Sherrod, Kennedy","pref":"","room":"Waits 301-3","phone":"817/357-5171","ra":"Jack"},{"name":"Singleton, Macyn","pref":"","room":"Waits 302-1","phone":"407/335-2781","ra":"Jack"},{"name":"White, Lillian","pref":"","room":"Waits 302-2","phone":"805/994-6837","ra":"Jack"},{"name":"Plummer, Siena","pref":"","room":"Waits 303-1","phone":"775/742-0922","ra":"Jack"},{"name":"Konzelmann, Alexa","pref":"","room":"Waits 303-2","phone":"856/656-6124","ra":"Jack"},{"name":"Plagens, Miley","pref":"","room":"Waits 304-1","phone":"832/795-4724","ra":"Jack"},{"name":"Waller, Mackenzie","pref":"","room":"Waits 304-2","phone":"713/240-3561","ra":"Jack"},{"name":"Winters, Adelyn","pref":"","room":"Waits 304-3","phone":"210/430-0549","ra":"Jack"},{"name":"Steidl, Jack","pref":"","room":"Waits 305-RA","phone":"661/877-7444","ra":"Jack"},{"name":"Yanez, Lizy","pref":"","room":"Waits 306-1","phone":"817/946-7359","ra":"Jack"},{"name":"Parrish, Sadie","pref":"","room":"Waits 306-2","phone":"253/677-6527","ra":"Jack"},{"name":"Michalewicz, Trista","pref":"","room":"Waits 306-3","phone":"254/214-0215","ra":"Jack"},{"name":"Kirk, Siena","pref":"","room":"Waits 307-1","phone":"206/304-1793","ra":"Jack"},{"name":"Garcia, Julianna","pref":"","room":"Waits 307-2","phone":"661/557-8863","ra":"Jack"},{"name":"Eckelberg, Lauren","pref":"","room":"Waits 308-1","phone":"715/781-4649","ra":"Jack"},{"name":"Afra, Ava","pref":"","room":"Waits 308-2","phone":"832/609-3810","ra":"Jack"},{"name":"Salinas Padilla, Christian","pref":"","room":"Waits 309-1","phone":"","ra":"Jack"},{"name":"Tobar Alvarez, Ricardo","pref":"","room":"Waits 309-2","phone":"469/596-4636","ra":"Jack"},{"name":"Cantu, Noah","pref":"","room":"Waits 309-3","phone":"806/336-2028","ra":"Jack"},{"name":"Terry, John","pref":"","room":"Waits 310-1","phone":"914/334-1034","ra":"Jack"},{"name":"Holloway, Joshua","pref":"","room":"Waits 310-2","phone":"682/222-2735","ra":"Jack"},{"name":"Vandever, Rori","pref":"","room":"Waits 311-1","phone":"817/586-5440","ra":"Jack"},{"name":"Beasley, Aubrey","pref":"","room":"Waits 311-2","phone":"442/219-1641","ra":"Jack"},{"name":"Echeverria, Andrea","pref":"","room":"Waits 312-1","phone":"305/607-5272","ra":"Jack"},{"name":"Lafont, Mia","pref":"","room":"Waits 312-2","phone":"305/803-0330","ra":"Jack"},{"name":"Trewin, Karly","pref":"","room":"Waits 313-1","phone":"952/818-2398","ra":"Jack"},{"name":"Heller, Emily","pref":"","room":"Waits 313-2","phone":"432/999-8616","ra":"Jack"},{"name":"Gillin, Cecile-Jeanne","pref":"","room":"Waits 313-3","phone":"802/461-6093","ra":"Jack"},{"name":"Perry, Adisten","pref":"","room":"Waits 314-1","phone":"949/870-8635","ra":"Jack"},{"name":"Sohal, Amritha","pref":"","room":"Waits 314-2","phone":"408/517-5192","ra":"Jack"},{"name":"Solis, Alfredo","pref":"","room":"Waits 315-1","phone":"773/367-0909","ra":"Jack"},{"name":"Harris, Elijah","pref":"","room":"Waits 315-2","phone":"614/743-0330","ra":"Jack"},{"name":"Umutoniwase, Samantha","pref":"","room":"Waits 316A-1","phone":"817/600-4642","ra":"Bella"},{"name":"Abraha, Diyana","pref":"","room":"Waits 316A-2","phone":"817/413-7897","ra":"Bella"},{"name":"Johnson, Celeste","pref":"","room":"Waits 316B-1","phone":"469/263-4739","ra":"Bella"},{"name":"Johnson, Calen","pref":"","room":"Waits 316B-2","phone":"469/263-7472","ra":"Bella"},{"name":"Miller, Molly","pref":"","room":"Waits 316C-1","phone":"409/782-9672","ra":"Bella"},{"name":"Gillen, Margaret","pref":"","room":"Waits 316C-2","phone":"903/520-1632","ra":"Bella"},{"name":"Cracolice, Quinn","pref":"","room":"Waits 316D-1","phone":"831/239-6813","ra":"Bella"},{"name":"Palla, Briana","pref":"","room":"Waits 316D-2","phone":"972/202-6659","ra":"Bella"},{"name":"Herrera, Jose","pref":"","room":"Waits 317-1","phone":"682/272-3321","ra":"Malaina"},{"name":"Munoz, Reynaldo","pref":"","room":"Waits 317-2","phone":"602/781-0046","ra":"Malaina"},{"name":"Luviano, Alexandra","pref":"","room":"Waits 318-1","phone":"469/315-5177","ra":"Malaina"},{"name":"Alba, Jocelyn","pref":"","room":"Waits 318-2","phone":"945/278-7302","ra":"Malaina"},{"name":"Cooper, Anne","pref":"","room":"Waits 319A-1","phone":"402/350-8937","ra":"Bella"},{"name":"Fahey, Gabrielle","pref":"","room":"Waits 319A-2","phone":"402/578-9847","ra":"Bella"},{"name":"Nguyen, Vu Phuong Ngoc","pref":"","room":"Waits 319B-1","phone":"619/756-2101","ra":"Bella"},{"name":"McDonald, Jada","pref":"","room":"Waits 319B-2","phone":"561/444-5201","ra":"Bella"},{"name":"Miller, Sophia","pref":"","room":"Waits 319C-1","phone":"501/352-5796","ra":"Bella"},{"name":"Saycocie, Kali","pref":"","room":"Waits 319C-2","phone":"817/941-5516","ra":"Bella"},{"name":"Baltz, Brooklyn","pref":"","room":"Waits 319D-1","phone":"503/793-1733","ra":"Bella"},{"name":"Dyrmishi, Noelle","pref":"","room":"Waits 319D-2","phone":"760/613-7723","ra":"Bella"},{"name":"Caldwell, Casey","pref":"","room":"Waits 320-CM","phone":"512/296-7001","ra":"Malaina"},{"name":"Ring, Dominick","pref":"","room":"Waits 321-1","phone":"","ra":"Malaina"},{"name":"Fenwick, John","pref":"","room":"Waits 321-2","phone":"859/221-9715","ra":"Malaina"},{"name":"Hemerick, Griffin","pref":"","room":"Waits 322-1","phone":"858/414-7700","ra":"Malaina"},{"name":"Kaminsky, Connor","pref":"","room":"Waits 322-2","phone":"619/733-1041","ra":"Malaina"},{"name":"Gadea, Carlos","pref":"","room":"Waits 322-3","phone":"50557293697","ra":"Malaina"},{"name":"Hudnall, Paige","pref":"","room":"Waits 323-1","phone":"314/566-7345","ra":"Malaina"},{"name":"Silkebaken, Kennedy","pref":"","room":"Waits 323-2","phone":"314/283-1298","ra":"Malaina"},{"name":"McNulty, Zoa","pref":"","room":"Waits 324-1","phone":"","ra":"Malaina"},{"name":"Crowell, Kendall","pref":"","room":"Waits 324-2","phone":"415/619-2397","ra":"Malaina"},{"name":"Plaisance, Jean-Paul","pref":"","room":"Waits 325-1","phone":"205/224-6696","ra":"Malaina"},{"name":"Grinder, Edwin","pref":"","room":"Waits 325-2","phone":"205/383-7031","ra":"Malaina"},{"name":"Arno, Marius","pref":"","room":"Waits 326-1","phone":"510/561-5060","ra":"Malaina"},{"name":"Desmond, Ryan","pref":"","room":"Waits 326-2","phone":"917/903-2577","ra":"Malaina"},{"name":"Garrett, Charles","pref":"","room":"Waits 326-3","phone":"201/748-9462","ra":"Malaina"},{"name":"Cosenza, Drake","pref":"","room":"Waits 327-1","phone":"630/520-8211","ra":"Malaina"},{"name":"Patel, Niyam","pref":"","room":"Waits 327-2","phone":"618/631-5559","ra":"Malaina"},{"name":"Piccione, Nicholas","pref":"","room":"Waits 328-1","phone":"337/501-1213","ra":"Malaina"},{"name":"Atkins, Robert","pref":"","room":"Waits 328-2","phone":"","ra":"Malaina"},{"name":"D'Orazio, Gianna","pref":"","room":"Waits 329-1","phone":"878/600-1394","ra":"Malaina"},{"name":"Videgain, Eden","pref":"","room":"Waits 329-2","phone":"818/836-7325","ra":"Malaina"},{"name":"Nguyen, Quynh Anh","pref":"","room":"Waits 329-3","phone":"840382000000","ra":"Malaina"},{"name":"Hartfield, Malaina","pref":"","room":"Waits 330-RA","phone":"210/372-7293","ra":"Malaina"},{"name":"Chavez, Gabriela","pref":"","room":"Waits 331-1","phone":"714/818-3139","ra":"Malaina"},{"name":"Popescu, Sofia","pref":"","room":"Waits 331-2","phone":"949/741-0981","ra":"Malaina"},{"name":"Kessler, Sydney","pref":"","room":"Waits 331-3","phone":"","ra":"Malaina"},{"name":"Dong, Hongyi","pref":"","room":"Waits 332-1","phone":"8617320000000","ra":"Malaina"},{"name":"Baker, Jakob","pref":"","room":"Waits 332-2","phone":"940/273-0965","ra":"Malaina"},{"name":"Phillips, Kian","pref":"","room":"Waits 333-1","phone":"904/524-1408","ra":"Malaina"},{"name":"Trechter, Michael","pref":"","room":"Waits 333-2","phone":"719/494-3672","ra":"Malaina"},{"name":"Welch, Garrett","pref":"","room":"Waits 334-1","phone":"925/698-6761","ra":"Malaina"},{"name":"Hatley, Brody","pref":"","room":"Waits 334-2","phone":"","ra":"Malaina"},{"name":"Perez, David","pref":"","room":"Waits 334-3","phone":"682/414-6124","ra":"Malaina"}],"staff":["Aaron","Alana","DaZiah","Bella","Bryson","Jack","Malaina"],"items":[{"name":"Balls for Pool","loc":"Drawer 1","cat":"Recreation and Games","qty":1},{"name":"Wii Remotes","loc":"Drawer 1","cat":"Recreation and Games","qty":5},{"name":"Pool Stick Sharpeners","loc":"Drawer 1","cat":"Recreation and Games","qty":1},{"name":"Ping Pong Paddels","loc":"Drawer 1","cat":"Recreation and Games","qty":6},{"name":"Foosball","loc":"Drawer 1","cat":"Recreation and Games","qty":1},{"name":"Ski Balls","loc":"Drawer 1","cat":"Recreation and Games","qty":1},{"name":"Screwdrivers","loc":"Drawer 2","cat":"Tools","qty":4},{"name":"Mallets","loc":"Drawer 2","cat":"Tools","qty":4},{"name":"Toolbox","loc":"Drawer 2","cat":"Tools","qty":1},{"name":"Assortment of Nails","loc":"Drawer 2","cat":"Tools","qty":1},{"name":"Wrenches","loc":"Drawer 2","cat":"Tools","qty":1},{"name":"Sticky Notes","loc":"Drawer 3","cat":"Office Supplies","qty":1},{"name":"Office Supplies","loc":"Drawer 3","cat":"Office Supplies","qty":1},{"name":"Note Cards","loc":"Drawer 3","cat":"Office Supplies","qty":1},{"name":"Expo Markers","loc":"Drawer 3","cat":"Office Supplies","qty":1},{"name":"Whiteboard erasers","loc":"Drawer 3","cat":"Office Supplies","qty":2},{"name":"Staplers","loc":"Drawer 4","cat":"Office Supplies","qty":2},{"name":"tape dispensers","loc":"Drawer 4","cat":"Office Supplies","qty":2},{"name":"Scissors","loc":"Drawer 4","cat":"Office Supplies","qty":3},{"name":"Three hole Punch","loc":"Drawer 4","cat":"Office Supplies","qty":2},{"name":"Scotch tape refills","loc":"Drawer 4","cat":"Office Supplies","qty":1},{"name":"Staple Refills","loc":"Drawer 4","cat":"Office Supplies","qty":1},{"name":"Pencil Sharpener","loc":"Drawer 4","cat":"Office Supplies","qty":1},{"name":"Nintendo Switch","loc":"Drawer 5","cat":"Recreation and Games","qty":1},{"name":"Basketball","loc":"Drawer 6","cat":"Sports","qty":1},{"name":"Football","loc":"Drawer 6","cat":"Sports","qty":3},{"name":"Soccerball","loc":"Drawer 6","cat":"Sports","qty":1},{"name":"Baseball","loc":"Drawer 6","cat":"Sports","qty":2},{"name":"Kickball","loc":"Drawer 6","cat":"Sports","qty":2},{"name":"Bug Spray","loc":"Drawer 6","cat":"Anti-Bugs","qty":1},{"name":"Hornet Spray","loc":"Drawer 6","cat":"Anti-Bugs","qty":1},{"name":"Raid","loc":"Drawer 6","cat":"Anti-Bugs","qty":1},{"name":"Ziploc Bags","loc":"Drawer 6","cat":"Anti-Bugs","qty":3},{"name":"Aluminum Foil","loc":"Drawer 7","cat":"Kitchen","qty":1},{"name":"Plastic Wrap","loc":"Drawer 7","cat":"Kitchen","qty":1},{"name":"Parchment Paper","loc":"Drawer 7","cat":"Kitchen","qty":1},{"name":"Clorox Wipes","loc":"Drawer 7","cat":"Kitchen","qty":1},{"name":"Swiffer Pads","loc":"Drawer 7","cat":"Kitchen","qty":1},{"name":"Windex","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Clorox Wipes","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Cleaning Spray","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Bleach","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Goo Gone","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Lysol","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Sponges","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Black Latex Gloves","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Large Trash Bags","loc":"Drawer 7","cat":"Cleaning","qty":1},{"name":"Stove Pots","loc":"Cabinet 8","cat":"Kitchen","qty":3},{"name":"Frying Pans","loc":"Cabinet 8","cat":"Kitchen","qty":2},{"name":"Pot Lids","loc":"Cabinet 8","cat":"Kitchen","qty":3},{"name":"Sheet Pans","loc":"Cabinet 8","cat":"Kitchen","qty":3},{"name":"Muffin Tins","loc":"Cabinet 8","cat":"Kitchen","qty":2},{"name":"Oven Pan","loc":"Cabinet 8","cat":"Kitchen","qty":1},{"name":"Whisks","loc":"Cabinet 8","cat":"Kitchen","qty":4},{"name":"Ice Cream Scoops","loc":"Cabinet 8","cat":"Kitchen","qty":4},{"name":"Cutting Boards","loc":"Cabinet 8","cat":"Kitchen","qty":4},{"name":"Hot Takes","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Exploding Kittens","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Never Have I Ever","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Play cards","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Uno","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Taco Cat Goat Cheese Pizza","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Chess and Checkers","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Yahtzee","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Tower Stack","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Jenga","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Telestrations","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Mencala","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Hues and Cues","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Tapple","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Wavelength","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Twister","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Bingo","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Puzzles","loc":"Cabinet 9","cat":"Recreation and Games","qty":3},{"name":"Game of Life","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"Scrabble","loc":"Cabinet 9","cat":"Recreation and Games","qty":1},{"name":"First Aid Bag","loc":"Underneath Desk","cat":"Misc","qty":1},{"name":"Emergancy Equipment","loc":"Underneath Desk","cat":"Misc","qty":1},{"name":"Lost and Found","loc":"Underneath Desk","cat":"Misc","qty":1},{"name":"Swiffers","loc":"To the Side of Cabinets","cat":"Cleaning","qty":2},{"name":"Broom and Dust Pan","loc":"To the Side of Cabinets","cat":"Cleaning","qty":1},{"name":"Vacum","loc":"To the Side of Cabinets","cat":"Cleaning","qty":1},{"name":"Pool Cues","loc":"To the Side of Cabinets","cat":"Recreation and Games","qty":4}]};
+
+/* ============ STORAGE ============ */
+const LS_KEY = "waitsDeskCheckout_v1";
+let memStore = null;
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){
+    document.getElementById("storageNotice").style.display = "block";
+    if(memStore) return memStore;
+  }
+  return null;
+}
+function saveState(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch(e){ memStore = JSON.parse(JSON.stringify(state)); document.getElementById("storageNotice").style.display="block"; }
+}
+let state = loadState() || { records: [], seq: 1 };
+if(!state.invLog) state.invLog = [];
+/* current inventory: synced copy if one has been imported, else the built-in list */
+function ITEMS(){ return state.inventory || DATA.items; }
+
+/* ============ HELPERS ============ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function fmtDT(ms){
+  const d = new Date(ms);
+  return d.toLocaleDateString([], {month:"short", day:"numeric"}) + " " +
+         d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+}
+function elapsed(ms){
+  let m = Math.floor((Date.now()-ms)/60000);
+  if(m < 1) return "just now";
+  if(m < 60) return m+"m";
+  let h = Math.floor(m/60); m = m%60;
+  if(h < 24) return h+"h "+m+"m";
+  const d = Math.floor(h/24); h = h%24;
+  return d+"d "+h+"h";
+}
+const CONCERN_MS = 2*3600000; // 2 hours out -> Missing / Concern
+function isConcern(r){ return !r.inAt && (Date.now()-r.outAt) > CONCERN_MS; }
+function status(r){ return r.inAt ? "returned" : (isConcern(r) ? "concern" : "out"); }
+/* white -> yellow/orange (1h) -> red (2h) gradient for out items */
+function heat(r){
+  const h = (Date.now()-r.outAt)/3600000;
+  let hue, sat, lit;
+  if(h <= 1){ const t = Math.min(1, Math.max(0, h));      // white -> yellow/orange
+    hue = 45-7*t; sat = 55+30*t; lit = 96-24*t; }
+  else { const t = Math.min(1, h-1);                       // yellow/orange -> red
+    hue = 38-30*t; sat = 85-13*t; lit = 72-14*t; }
+  return { bg:`hsl(${hue},${sat}%,${lit}%)`, edge:`hsl(${hue},${Math.min(90,sat+10)}%,${Math.max(30,lit-28)}%)` };
+}
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("show"), 2400);
+}
+function displayName(res){
+  // "Last, First" -> "First Last"; keep preferred in parens
+  let n = res.name;
+  if(n.includes(",")){ const [l,f] = n.split(","); n = f.trim()+" "+l.trim(); }
+  if(res.pref) n += " (“"+res.pref+"”)";
+  return n;
+}
+function allStaff(){ return STAFF; }
+
+/* ============ CHECK OUT FORM STATE ============ */
+let selResident = null;   // {name, room, ...} or {name:"...", custom:true}
+let selItem = null;       // {name, loc, cat} or {name:"...", custom:true}
+let selStaff = null;
+
+/* --- resident autocomplete --- */
+const resInput = $("resInput"), resSuggest = $("resSuggest");
+resInput.addEventListener("input", ()=>{
+  selResident = null; renderResBanner();
+  const q = resInput.value.trim().toLowerCase();
+  if(q.length < 2){ resSuggest.style.display="none"; return; }
+  const hits = DATA.residents.filter(r =>
+    r.name.toLowerCase().includes(q) ||
+    (r.pref && r.pref.toLowerCase().includes(q)) ||
+    r.room.toLowerCase().includes(q)
+  ).slice(0,8);
+  let html = hits.map((r,i)=>`<button data-i="${DATA.residents.indexOf(r)}">${esc(displayName(r))}<span class="sm">${esc(r.room)}${r.ra?" · RA: "+esc(r.ra):""}</span></button>`).join("");
+  html += `<button data-guest="1">➕ Use “${esc(resInput.value.trim())}” (not on roster)</button>`;
+  resSuggest.innerHTML = html; resSuggest.style.display="block";
+});
+resSuggest.addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.guest){ selResident = {name: resInput.value.trim(), room:"", custom:true}; }
+  else { selResident = DATA.residents[+b.dataset.i]; resInput.value = displayName(selResident); }
+  $("contactInput").value = selResident.phone || "";
+  resSuggest.style.display="none"; renderResBanner();
+});
+document.addEventListener("click", e=>{ if(!e.target.closest(".suggest")) resSuggest.style.display="none"; });
+function renderResBanner(){
+  const el = $("resBanner");
+  if(!selResident){ el.innerHTML=""; return; }
+  el.innerHTML = `<div class="selected-banner"><span>✅ <b>${esc(selResident.custom? selResident.name : displayName(selResident))}</b>${selResident.room? " · "+esc(selResident.room):""}${selResident.custom? " · <i>not on roster</i>":""}</span><button type="button" data-clear>✕</button></div>`;
+  el.querySelector("[data-clear]").onclick = ()=>{ selResident=null; resInput.value=""; $("contactInput").value=""; renderResBanner(); };
+}
+
+/* --- item picker --- */
+function CATS(){ return ["All", ...new Set(ITEMS().map(i=>i.cat))]; }
+let activeCat = "All";
+function renderCatChips(){
+  if(!CATS().includes(activeCat)) activeCat = "All";
+  $("catChips").innerHTML = CATS().map(c=>`<button type="button" class="chip ${c===activeCat?"on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+}
+$("catChips").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  activeCat = b.dataset.c; renderCatChips(); renderItemList();
+});
+function renderItemList(){
+  const q = $("itemSearch").value.trim().toLowerCase();
+  let list = ITEMS().filter(i => (activeCat==="All" || i.cat===activeCat) && (!q || i.name.toLowerCase().includes(q)));
+  let html = list.slice(0,60).map(i=>{
+    const idx = ITEMS().indexOf(i);
+    const on = selItem && !selItem.custom && selItem._idx===idx;
+    return `<button type="button" class="${on?"on":""}" data-i="${idx}"><span>${esc(i.name)}${i.qty>1?` <span class="loc">×${i.qty}</span>`:""}</span><span class="loc">${esc(i.loc)}</span></button>`;
+  }).join("");
+  if(q) html += `<button type="button" data-custom="1"><span>➕ Custom item: “${esc($("itemSearch").value.trim())}”</span><span class="loc">one-off</span></button>`;
+  $("itemList").innerHTML = html || `<button type="button" disabled><span style="color:#8a7355;font-style:italic">No matches</span></button>`;
+}
+$("itemSearch").addEventListener("input", renderItemList);
+$("itemList").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-i],button[data-custom]"); if(!b) return;
+  if(b.dataset.custom){ selItem = {name:$("itemSearch").value.trim(), loc:"", cat:"Custom", custom:true}; }
+  else { const i = ITEMS()[+b.dataset.i]; selItem = {...i, _idx:+b.dataset.i}; }
+  renderItemList(); renderItemBanner();
+});
+function renderItemBanner(){
+  const el = $("itemBanner");
+  if(!selItem){ el.innerHTML=""; return; }
+  el.innerHTML = `<div class="selected-banner"><span>📦 <b>${esc(selItem.name)}</b>${selItem.loc? " · "+esc(selItem.loc):""} <span style="color:#8a7355">(${esc(selItem.cat)})</span></span><button type="button" data-clear>✕</button></div>`;
+  el.querySelector("[data-clear]").onclick = ()=>{ selItem=null; renderItemList(); renderItemBanner(); };
+}
+
+/* --- staff chips --- */
+function renderStaffChips(){
+  const el = $("staffChips");
+  el.innerHTML = allStaff().map(s=>`<button type="button" class="chip ${s===selStaff?"on":""}" data-s="${esc(s)}">${esc(s)}</button>`).join("");
+}
+$("staffChips").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  selStaff = b.dataset.s; renderStaffChips();
+});
+
+/* --- submit --- */
+$("checkoutBtn").addEventListener("click", ()=>{
+  if(!selResident && resInput.value.trim()) selResident = {name: resInput.value.trim(), room:"", custom:true};
+  if(!selResident){ toast("Who's taking it? Pick a resident."); resInput.focus(); return; }
+  if(!selItem && $("itemSearch").value.trim()) selItem = {name:$("itemSearch").value.trim(), loc:"", cat:"Custom", custom:true};
+  if(!selItem){ toast("Pick the item they're taking."); $("itemSearch").focus(); return; }
+  if(!selStaff){ toast("Which RA/CA is logging this?"); return; }
+  const rec = {
+    id: state.seq++,
+    resident: selResident.custom ? selResident.name : displayName(selResident),
+    room: selResident.room || "",
+    contact: $("contactInput").value.trim(),
+    item: selItem.name, cat: selItem.cat, loc: selItem.loc || "",
+    staff: selStaff,
+    collateral: $("collateralInput").value.trim(),
+    notes: $("notesInput").value.trim(),
+    outAt: Date.now(), inAt: null, returnedBy: null
+  };
+  state.records.push(rec); saveState();
+  toast("🤠 " + rec.item + " checked out to " + rec.resident.split(" (")[0]);
+  // reset form (keep staff selected — same person logs several)
+  selResident=null; resInput.value=""; $("contactInput").value=""; renderResBanner();
+  selItem=null; $("itemSearch").value=""; renderItemList(); renderItemBanner();
+  $("collateralInput").value=""; $("notesInput").value="";
+  renderAll();
+});
+
+/* ============ OUT NOW ============ */
+let returnOpenId = null;
+function recCard(r, showActions){
+  const st = status(r);
+  const badge = {out:"Still Out", concern:"Missing / Concern", returned:"Returned"}[st];
+  const style = r.inAt ? "" : (()=>{ const h = heat(r); return ` style="background:${h.bg};border-left-color:${h.edge}"`; })();
+  let meta = `Out: ${fmtDT(r.outAt)} · by ${esc(r.staff)}`;
+  if(r.inAt) meta += `<br>Back: ${fmtDT(r.inAt)}${r.returnedBy? " · to "+esc(r.returnedBy):""}`;
+  else meta += ` · out ${elapsed(r.outAt)}`;
+  if(r.contact) meta += `<br>📞 <a href="tel:${esc(r.contact.replace(/[^+\d]/g,""))}" style="color:inherit;font-weight:700">${esc(r.contact)}</a>`;
+  if(r.collateral) meta += `<br>🔐 Collateral: ${esc(r.collateral)}${r.inAt? "" : " (return it with the item!)"}`;
+  if(r.loc) meta += `<br>Lives in: ${esc(r.loc)}`;
+  if(r.notes) meta += `<br>📝 ${esc(r.notes)}`;
+  let actions = "";
+  if(showActions && !r.inAt){
+    if(returnOpenId === r.id){
+      actions = `<div class="returnpick"><div class="lbl">Returned to which RA/CA?</div>
+        <div class="chips">${allStaff().map(s=>`<button type="button" class="chip" data-ret="${r.id}" data-s="${esc(s)}">${esc(s)}</button>`).join("")}
+        <button type="button" class="chip" data-ret="${r.id}" data-s="">Skip</button></div></div>`;
+    } else {
+      actions = `<div class="rowbtns"><button type="button" class="primary" data-open="${r.id}">✔ Mark Returned</button></div>`;
+    }
+  }
+  if(showActions && r.inAt){
+    actions = `<div class="rowbtns"><button type="button" data-undo="${r.id}">↩ Undo Return</button></div>`;
+  }
+  return `<div class="rec ${st}"${style}>
+    <div class="top"><span class="who">${esc(r.resident)}${r.room? ` <span style="font-weight:400;font-size:.8rem;color:#7a6446">· ${esc(r.room)}</span>`:""}</span><span class="badge ${st}">${badge}</span></div>
+    <div class="item">📦 ${esc(r.item)} <span style="color:#8a7355;font-size:.8rem">(${esc(r.cat)})</span></div>
+    <div class="meta">${meta}</div>
+    ${actions}
+  </div>`;
+}
+function renderOut(){
+  const outs = state.records.filter(r=>!r.inAt).sort((a,b)=>a.outAt-b.outAt);
+  $("outList").innerHTML = outs.length
+    ? outs.map(r=>recCard(r,true)).join("")
+    : `<div class="empty"><span class="big">🌵</span><br>Nothing's out on the range.<br>All items are back in the corral.</div>`;
+}
+document.addEventListener("click", e=>{
+  const open = e.target.closest("[data-open]");
+  if(open){ returnOpenId = +open.dataset.open; renderOut(); renderLog(); return; }
+  const ret = e.target.closest("[data-ret]");
+  if(ret){
+    const r = state.records.find(x=>x.id===+ret.dataset.ret);
+    if(r){ r.inAt = Date.now(); r.returnedBy = ret.dataset.s || null; saveState();
+      toast(r.collateral ? "✔ "+r.item+" is back — hand back their "+r.collateral+"!" : "✔ "+r.item+" is back in the corral"); }
+    returnOpenId = null; renderAll(); return;
+  }
+  const undo = e.target.closest("[data-undo]");
+  if(undo){
+    const r = state.records.find(x=>x.id===+undo.dataset.undo);
+    if(r){ r.inAt = null; r.returnedBy = null; saveState(); toast("↩ Marked as still out"); renderAll(); }
+  }
+});
+
+/* ============ LOG ============ */
+const FILTERS = ["All","Still Out","Missing / Concern","Returned"];
+let activeFilter = "All";
+$("logFilters").innerHTML = FILTERS.map(f=>`<button type="button" class="chip ${f===activeFilter?"on":""}" data-f="${f}">${f}</button>`).join("");
+$("logFilters").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  activeFilter = b.dataset.f;
+  [...$("logFilters").children].forEach(c=>c.classList.toggle("on", c.dataset.f===activeFilter));
+  renderLog();
+});
+$("logSearch").addEventListener("input", renderLog);
+function renderLog(){
+  const q = $("logSearch").value.trim().toLowerCase();
+  let list = [...state.records].sort((a,b)=>b.outAt-a.outAt);
+  if(activeFilter==="Still Out") list = list.filter(r=>status(r)==="out");
+  if(activeFilter==="Missing / Concern") list = list.filter(r=>status(r)==="concern");
+  if(activeFilter==="Returned") list = list.filter(r=>status(r)==="returned");
+  if(q) list = list.filter(r => (r.resident+" "+r.item+" "+r.staff+" "+(r.notes||"")).toLowerCase().includes(q));
+  $("logList").innerHTML = list.length
+    ? list.map(r=>recCard(r,true)).join("")
+    : `<div class="empty"><span class="big">📜</span><br>No entries here yet, partner.</div>`;
+}
+
+/* ============ EXPORT ============ */
+$("exportBtn").addEventListener("click", async ()=>{
+  if(!state.records.length){ toast("Nothing to export yet."); return; }
+  if(typeof ExcelJS === "undefined"){ exportCSV(); return; }
+  try{
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Item Checkouts", {views:[{showGridLines:true}]});
+    ws.columns = [
+      {header:"Resident Name", key:"res", width:24},
+      {header:"Room", key:"room", width:14},
+      {header:"Contact", key:"contact", width:15},
+      {header:"Category", key:"cat", width:15},
+      {header:"Item Description", key:"item", width:26},
+      {header:"RA/CA Name", key:"staff", width:13},
+      {header:"Collateral", key:"coll", width:16},
+      {header:"Date Out", key:"out", width:17},
+      {header:"Date Returned", key:"in", width:17},
+      {header:"Status", key:"st", width:18},
+      {header:"Notes", key:"notes", width:30},
+    ];
+    // Title row styling on header
+    const head = ws.getRow(1);
+    head.font = {bold:true, color:{argb:"FFF6EFE1"}, name:"Georgia"};
+    head.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"FF4A3116"}};
+    head.alignment = {vertical:"middle"};
+    head.height = 20;
+    const FILLS = {
+      returned: {type:"pattern", pattern:"solid", fgColor:{argb:"FFC6EFCE"}},
+      concern:  {type:"pattern", pattern:"solid", fgColor:{argb:"FFFFC7CE"}},
+      out: null
+    };
+    const FONTS = {
+      returned: {color:{argb:"FF006100"}},
+      concern:  {color:{argb:"FF9C0006"}},
+      out: null
+    };
+    const sorted = [...state.records].sort((a,b)=>a.outAt-b.outAt);
+    for(const r of sorted){
+      const st = status(r);
+      const row = ws.addRow({
+        res:r.resident, room:r.room, contact:r.contact||"", cat:r.cat, item:r.item, staff:r.staff,
+        coll:r.collateral||"",
+        out:new Date(r.outAt), in:r.inAt? new Date(r.inAt) : "",
+        st: st==="out" ? "Still Out" : st==="concern" ? "MISSING / CONCERN" : "Returned",
+        notes:r.notes||""
+      });
+      row.getCell("out").numFmt = "m/d/yy h:mm AM/PM";
+      if(r.inAt) row.getCell("in").numFmt = "m/d/yy h:mm AM/PM";
+      if(FILLS[st]) row.eachCell({includeEmpty:true}, c=>{ c.fill = FILLS[st]; if(FONTS[st]) c.font = FONTS[st]; });
+      row.eachCell({includeEmpty:true}, c=>{ c.border = {bottom:{style:"thin", color:{argb:"FFD9C39A"}}}; });
+    }
+    ws.autoFilter = "A1:K1";
+    const buf = await wb.xlsx.writeBuffer();
+    downloadBlob(new Blob([buf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),
+      "Waits Item Checkouts "+new Date().toISOString().slice(0,10)+".xlsx");
+    toast("📜 Sheet exported — drop it in the desk log");
+  }catch(err){ console.error(err); exportCSV(); }
+});
+function exportCSV(){
+  const rows = [["Resident Name","Room","Contact","Category","Item Description","RA/CA Name","Collateral","Date Out","Date Returned","Status","Notes"]];
+  for(const r of [...state.records].sort((a,b)=>a.outAt-b.outAt)){
+    const st = status(r);
+    rows.push([r.resident, r.room, r.contact||"", r.cat, r.item, r.staff, r.collateral||"", fmtDT(r.outAt), r.inAt?fmtDT(r.inAt):"",
+      st==="out"?"Still Out":st==="concern"?"MISSING / CONCERN":"Returned", r.notes||""]);
+  }
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  downloadBlob(new Blob([csv], {type:"text/csv"}), "Waits Item Checkouts.csv");
+  toast("Exported as CSV (offline mode)");
+}
+function downloadBlob(blob, name){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+
+/* ============ INVENTORY SYNC ============ */
+const LOC_CAT = {
+  "Drawer 1":"Recreation and Games","Drawer 2":"Tools","Drawer 3":"Office Supplies",
+  "Drawer 4":"Office Supplies","Drawer 5":"Recreation and Games","Cabinet 8":"Kitchen",
+  "Cabinet 9":"Recreation and Games","Underneath Desk":"Misc"
+};
+function catFor(loc, shelf, line){
+  if(LOC_CAT[loc]) return LOC_CAT[loc];
+  const low = line.toLowerCase();
+  if(loc==="Drawer 6") return shelf==="bottom" ? "Anti-Bugs" : "Sports";
+  if(loc==="Drawer 7") return shelf==="bottom" ? "Cleaning" : "Kitchen";
+  if(loc==="To the Side of Cabinets") return low.includes("cue") ? "Recreation and Games" : "Cleaning";
+  return "Misc";
+}
+function parseInventorySheet(rows){
+  const items = [];
+  for(const row of rows){
+    const loc = row[1] != null ? String(row[1]).trim() : "";
+    const text = row[2] != null ? String(row[2]) : "";
+    if(!loc || !text || loc==="FRONT DESK" || loc==="Location") continue;
+    let shelf = "top";
+    for(let line of text.split("\n")){
+      line = line.trim();
+      if(!line) continue;
+      const low = line.toLowerCase();
+      if(low.startsWith("top shelf")){ shelf="top"; continue; }
+      if(low.startsWith("bottom shelf")){ shelf="bottom"; continue; }
+      if(low.startsWith("games:")) continue;
+      const m = line.match(/^\((\d+)\)\s*(.+)$/);
+      const qty = m ? +m[1] : 1;
+      let name = (m ? m[2] : line).trim().replace(/\?$/,"").trim();
+      if(!name) continue;
+      items.push({name, loc, cat: catFor(loc, shelf, line), qty});
+    }
+  }
+  return items;
+}
+function diffInventory(oldItems, newItems){
+  const key = i => (i.name.toLowerCase()+"|"+i.loc.toLowerCase());
+  const oldMap = new Map(oldItems.map(i=>[key(i), i]));
+  const newMap = new Map(newItems.map(i=>[key(i), i]));
+  const changes = [];
+  for(const [k, ni] of newMap){
+    const oi = oldMap.get(k);
+    if(!oi) changes.push({action:"added", text:`Added “${ni.name}”${ni.qty>1?" ×"+ni.qty:""} (${ni.loc})`});
+    else if(oi.qty !== ni.qty) changes.push({action:"changed", text:`“${ni.name}” (${ni.loc}): quantity ${oi.qty} → ${ni.qty}`});
+  }
+  for(const [k, oi] of oldMap){
+    if(!newMap.has(k)) changes.push({action:"removed", text:`Removed “${oi.name}”${oi.qty>1?" ×"+oi.qty:""} (${oi.loc})`});
+  }
+  return changes;
+}
+$("invSyncBtn").addEventListener("click", ()=>{
+  if(typeof XLSX === "undefined"){ toast("Need internet the first time this page loads to read Excel files."); return; }
+  $("invSyncFile").click();
+});
+$("invSyncFile").addEventListener("change", async e=>{
+  const f = e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    const wb = XLSX.read(await f.arrayBuffer());
+    const sheetName = wb.SheetNames.find(n => n.trim().toLowerCase() === "inventory");
+    if(!sheetName){ toast("Couldn't find an “Inventory” sheet in that workbook."); return; }
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:null});
+    const newItems = parseInventorySheet(rows);
+    if(!newItems.length){ toast("The Inventory sheet looks empty — nothing imported."); return; }
+    const changes = diffInventory(ITEMS(), newItems);
+    state.inventory = newItems;
+    if(changes.length){
+      for(const c of changes) state.invLog.unshift({at: Date.now(), action: c.action, text: c.text});
+      state.invLog = state.invLog.slice(0, 200);
+    }
+    state.invLog.unshift({at: Date.now(), action:"sync", text:`Synced from desk log — ${newItems.length} items, ${changes.length} change${changes.length===1?"":"s"}`});
+    saveState();
+    renderCatChips(); renderItemList(); renderInvRef(); renderInvLog();
+    toast(changes.length ? "🔄 Inventory updated — "+changes.length+" change"+(changes.length===1?"":"s")+" logged" : "🔄 Inventory synced — already up to date");
+  }catch(err){ console.error(err); toast("Couldn't read that file — is it the desk log .xlsx?"); }
+});
+function renderInvLog(){
+  const IC = {added:"🟢", removed:"🔴", changed:"🟡", sync:"🔄"};
+  $("invLogCount").textContent = state.invLog.length ? state.invLog.length+" entries" : "";
+  $("invLog").innerHTML = state.invLog.length
+    ? state.invLog.slice(0,60).map(l=>`<div class="meta" style="font-size:.82rem;color:#7a6446;padding:5px 0;border-bottom:1px dashed var(--tan)">${IC[l.action]||"•"} ${esc(l.text)}<br><span style="font-size:.72rem;color:#a08a68">${fmtDT(l.at)}</span></div>`).join("")
+    : `<div class="hint" style="font-style:italic">No inventory changes yet. Sync the desk log after you edit it and changes will show up here.</div>`;
+}
+
+/* ============ MORE / SETTINGS ============ */
+function renderStaffManage(){
+  $("staffManage").innerHTML =
+    STAFF.map(s=>`<span class="chip on" style="cursor:default">${esc(s)}</span>`).join("");
+}
+function renderInvRef(){
+  const locs = [...new Set(ITEMS().map(i=>i.loc))];
+  $("invRef").innerHTML = locs.map(l=>`<details class="invloc"><summary>${esc(l)}</summary><ul>${
+    ITEMS().filter(i=>i.loc===l).map(i=>`<li>${esc(i.name)}${i.qty>1?" ×"+i.qty:""}</li>`).join("")
+  }</ul></details>`).join("");
+}
+$("backupBtn").addEventListener("click", ()=>{
+  downloadBlob(new Blob([JSON.stringify(state,null,1)], {type:"application/json"}),
+    "waits-checkout-backup-"+new Date().toISOString().slice(0,10)+".json");
+});
+$("restoreBtn").addEventListener("click", ()=>$("restoreFile").click());
+$("restoreFile").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      const s = JSON.parse(rd.result);
+      if(!Array.isArray(s.records)) throw 0;
+      state = s; if(!state.invLog) state.invLog = [];
+      saveState();
+      renderAll(); renderStaffChips(); renderStaffManage();
+      renderCatChips(); renderItemList(); renderInvRef(); renderInvLog();
+      toast("Backup restored — "+state.records.length+" records");
+    }catch(err){ toast("That file doesn't look like a backup."); }
+  };
+  rd.readAsText(f); e.target.value = "";
+});
+let clearArmed = false;
+$("clearBtn").addEventListener("click", ()=>{
+  if(!clearArmed){ clearArmed = true; $("clearBtn").textContent = "Tap again to erase EVERYTHING"; setTimeout(()=>{clearArmed=false;$("clearBtn").textContent="Clear All Records…";}, 3500); return; }
+  state.records = []; state.seq = 1; saveState(); renderAll();
+  clearArmed = false; $("clearBtn").textContent = "Clear All Records…";
+  toast("All records cleared");
+});
+
+/* ============ TABS & STATS ============ */
+document.querySelector("nav").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-tab]"); if(!b) return;
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on", x===b));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.id==="tab-"+b.dataset.tab));
+  window.scrollTo({top:0});
+});
+function renderStats(){
+  const outs = state.records.filter(r=>!r.inAt);
+  const od = outs.filter(isConcern);
+  const midnight = new Date(); midnight.setHours(0,0,0,0);
+  const today = state.records.filter(r=>r.outAt >= midnight.getTime());
+  $("statOut").textContent = outs.length;
+  $("statOverdue").textContent = od.length;
+  $("statToday").textContent = today.length;
+  $("statOverdueBox").classList.toggle("warn", od.length>0);
+}
+function renderAll(){ renderStats(); renderOut(); renderLog(); }
+
+/* ============ INIT ============ */
+renderCatChips(); renderItemList(); renderStaffChips(); renderStaffManage(); renderInvRef(); renderInvLog(); renderAll();
+setInterval(renderAll, 60000); // keep elapsed times & overdue flags fresh
+</script>
+</body>
+</html>
