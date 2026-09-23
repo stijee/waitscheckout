@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#5c4023">
+<meta name="theme-color" content="#5c4023">$("signOutBtn").addEventListener("click", ()=>{
+  try{ localStorage.removeItem("waitsPinOk"); }catch(e){}
+  location.reload();
+});
 <title>Waits Hall — Ins and Outs</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🤠</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" defer></script>
@@ -938,6 +941,12 @@ function renderAll(){ renderStats(); renderOut(); renderLog(); }
 /* ============ INIT ============ */
 renderCatChips(); renderItemList(); renderStaffChips(); renderStaffManage(); renderInvRef(); renderInvLog(); renderAll();
 setInterval(renderAll, 60000); // keep elapsed times & overdue flags fresh
+  
+  $("signOutBtn").addEventListener("click", ()=>{
+  try{ localStorage.removeItem("waitsPinOk"); }catch(e){}
+  location.reload();
+    
+});
 
 /* ============ STAFF PIN GATE ============ */
 (function(){
