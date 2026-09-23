@@ -371,7 +371,7 @@ const recToRow = r => ({
 });
 async function cloudLoad(){
   const { data, error } = await sb.from("checkouts").select("*").order("out_at");
-  if(error){ console.error(error); toast("⚠️ Couldn't reach the corral server"); return; }
+  if(error){ console.error(error); toast("⚠️ Couldn't reach the server. That sucks..."); return; }
   state.records = data.map(rowToRec);
   const st = await sb.from("app_state").select("*");
   if(!st.error && st.data){
@@ -629,7 +629,7 @@ function renderOut(){
   const outs = state.records.filter(r=>!r.inAt).sort((a,b)=>a.outAt-b.outAt);
   $("outList").innerHTML = outs.length
     ? outs.map(r=>recCard(r,true)).join("")
-    : `<div class="empty"><span class="big">🌵</span><br>Nothing's out on the range.<br>All items are back in the corral.</div>`;
+    : `<div class="empty"><span class="big">🌵</span><br>Nothing's out on the range.<br>All items are back at the desk.</div>`;
 }
 document.addEventListener("click", e=>{
   const open = e.target.closest("[data-open]");
@@ -641,7 +641,7 @@ document.addEventListener("click", e=>{
       if(cloudMode) sb.from("checkouts").update({in_at:new Date(r.inAt).toISOString(), returned_by:r.returnedBy})
         .eq("id", r.id).then(({error})=>{ if(error){ console.error(error); toast("⚠️ Return didn't save — try again"); r.inAt=null; r.returnedBy=null; renderAll(); } });
       const lbl = (r.count>1? r.count+"× ":"")+r.item;
-      toast(r.collateral ? "✔ "+lbl+" is back — hand back their "+r.collateral+"!" : "✔ "+lbl+" is back in the corral"); }
+      toast(r.collateral ? "✔ "+lbl+" is back — hand back their "+r.collateral+"!" : "✔ "+lbl+" is back at the desk!"); }
     returnOpenId = null; renderAll(); return;
   }
   const undo = e.target.closest("[data-undo]");
