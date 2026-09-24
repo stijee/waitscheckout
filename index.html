@@ -626,7 +626,7 @@ function renderOut(){
   const outs = state.records.filter(r=>!r.inAt).sort((a,b)=>a.outAt-b.outAt);
   $("outList").innerHTML = outs.length
     ? outs.map(r=>recCard(r,true)).join("")
-    : `<div class="empty"><span class="big">🌵</span><br>Nothing's out on the range.<br>All items are back at the desk.</div>`;
+    : `<div class="empty"><span class="big">🌵</span><br>All items are back at the desk.</div>`;
 }
 document.addEventListener("click", e=>{
   const open = e.target.closest("[data-open]");
