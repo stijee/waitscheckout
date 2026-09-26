@@ -67,10 +67,8 @@ textarea{resize:vertical; min-height:68px}
   border:1.5px solid var(--tan2); background:#fff; color:var(--ink); cursor:pointer;
   white-space:nowrap;
 }
-/* staff chips: always a single row (scrolls sideways on small screens) */
-#staffChips{flex-wrap:nowrap; overflow-x:auto; padding-bottom:5px; scrollbar-width:thin}
-#staffChips .chip{flex:0 0 auto}
-@media (max-width:520px){ #staffChips .chip{font-size:.85rem; padding:8px 11px} }
+
+@media (max-width:520px){ #staffChips .chip{font-size:.85rem; padding:8px 11px} }   ← keep this line
 .chip.on{background:var(--saddle); border-color:var(--saddle); color:var(--cream); font-weight:600}
 .chip.add{border-style:dashed; color:var(--saddle)}
 .suggest{position:relative}
