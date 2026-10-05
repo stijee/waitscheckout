@@ -640,7 +640,7 @@ document.addEventListener("click", e=>{
     const r = state.records.find(x=>String(x.id)===String(ret.dataset.ret));
     if(r){ r.inAt = Date.now(); r.returnedBy = ret.dataset.s || null; saveState();
       if(cloudMode) sb.from("checkouts").update({in_at:new Date(r.inAt).toISOString(), returned_by:r.returnedBy})
-        .eq("id", r.id).then(({error})=>{ if(error){ console.error(error); toast("⚠️ Return didn't save — try again"); r.inAt=null; r.returnedBy=null; renderAll(); } });
+        .eq("id", r.id).then(({error})=>{ if(error){ console.error(error); toast("⚠️ 'Return' function save failed. Please try again."); r.inAt=null; r.returnedBy=null; renderAll(); } });
       const lbl = (r.count>1? r.count+"× ":"")+r.item;
       toast(r.collateral ? "✔ "+lbl+" is back — hand back their "+r.collateral+"!" : "✔ "+lbl+" is back at the desk!"); }
     returnOpenId = null; renderAll(); return;
@@ -675,7 +675,7 @@ function renderLog(){
   if(q) list = list.filter(r => (r.resident+" "+r.item+" "+r.staff+" "+(r.notes||"")).toLowerCase().includes(q));
   $("logList").innerHTML = list.length
     ? list.map(r=>recCard(r,true)).join("")
-    : `<div class="empty"><span class="big">📜</span><br>No entries here yet, partner.</div>`;
+    : `<div class="empty"><span class="big">📜</span><br>No entries here yet. Check back later...</div>`;
 }
 
 /* ============ EXPORT ============ */
@@ -691,11 +691,11 @@ $("exportBtn").addEventListener("click", async ()=>{
       {header:"Contact", key:"contact", width:15},
       {header:"Category", key:"cat", width:15},
       {header:"Item Description", key:"item", width:26},
-      {header:"Qty", key:"qty", width:6},
+      {header:"Quantity", key:"qty", width:6},
       {header:"RA/CA Name", key:"staff", width:13},
       {header:"Collateral", key:"coll", width:16},
-      {header:"Date Out", key:"out", width:17},
-      {header:"Date Returned", key:"in", width:17},
+      {header:"Time Checked Out", key:"out", width:17},
+      {header:"Time Returned", key:"in", width:17},
       {header:"Status", key:"st", width:18},
       {header:"Notes", key:"notes", width:30},
     ];
